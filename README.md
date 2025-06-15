@@ -78,7 +78,7 @@ sudo apt-get install -y nodejs
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/ronierichardman/swimming-pool-sim.git
 cd swimming-pool-sim
 ```
 
@@ -120,7 +120,7 @@ source venv/bin/activate
 # Navigate to PerformanceTest directory
 cd PerformanceTest
 
-# Run quick comparison (30-60 seconds)
+# Run quick comparison
 python compare_tool.py
 ```
 
@@ -218,8 +218,6 @@ source venv/bin/activate
 # 2. Quick comparison to see which framework is faster
 cd PerformanceTest
 python compare_tool.py
-
-# Takes 30-60 seconds, shows immediate results
 ```
 
 ### Quick Development Cycle
@@ -233,12 +231,10 @@ cd PerformanceTest
 python performance_test.py --type quick
 
 # 4. Check results in output/ directory
-open output/  # macOS
 ```
 
 ### Full Analysis Cycle
 ```bash
-# Run comprehensive analysis (15-30 minutes)
 python performance_test.py --type comprehensive
 
 # Review generated reports

@@ -1,0 +1,85 @@
+//*****************************************************************************
+//      Module Schwimhalle
+//****************************************************************************
+//	Imports...
+import <stats>
+	module Schwimmhalle1{
+		//	Class Definitions...
+		//	Statement/Macro Definitions...
+		//	Global_variables...
+		rn_stream Ankunft, Service; // independent random streams
+control boolean Eingangstor_offen = TRUE;
+int Hallenkapazitaet = 50;
+control int Anzahl_Schwimmer;
+int Wartende;
+int Arbeitszeit = 5 * 8 * 60; // five 8-hour shifts (in minutes)
+random_variable Wartezeiten;
+
+class customer()
+{
+	int cid;
+	double w, zeit;
+	int alter;
+	double WartezeitBeginn, WartezeitEnde;
+
+	actions
+	{
+		++Wartende;
+		WartezeitBeginn = time;
+		print(Wartende, Anzahl_Schwimmer) "Wartende: _ Anzahl Schwimmer: _\n";
+		wait until((Eingangstor_offen) && (Anzahl_Schwimmer < Hallenkapazitaet));
+
+		// Jetzt geht es in die Halle !
+		--Wartende;
+		WartezeitEnde = time;
+		tabulate Wartezeiten = WartezeitEnde - WartezeitBeginn; // Wartedauer
+		++Anzahl_Schwimmer;										// Der Schwimmer betritt die Halle
+		w = frn(Service);										// Ermittlung des Verhaltens
+		if (w <= 0.6)
+		{
+			zeit = rv_uniform(Service, 115, 125);
+		}
+		else
+		{
+			zeit = rv_uniform(Service, 75, 120);
+		}
+		advance(zeit);		// Jetzt wird gebadet !!
+		--Anzahl_Schwimmer; // Der Schwimmer verl��t die Halle
+
+		terminate;
+	}
+}
+
+procedure
+main()
+{ // Generierungsschleife f�r die Kunden
+	fork
+	{
+		while (time < Arbeitszeit) // Simulation einer Woche bzw. Zeit wie angegeben
+		{
+			advance rv_expo(Ankunft, 1); // Ankunft eines Schwimminteressierten
+
+			if (Wartende < 30)
+			{
+				activate new customer();
+			}
+		}
+	}
+
+	// Zeitsteuerung der Eingangst�r : �ffnung zu jeden vollen Stunde !
+	// {
+	while (time < Arbeitszeit) // Simulation einer Woche bzw. Zeit wie angegeben
+	{
+		Eingangstor_offen = TRUE;
+		print(time) "\n�ffne Eingangstor : _ ";
+		advance 1;
+		Eingangstor_offen = FALSE;
+		print(time) "\nSchlie�e Eingangstor : _ ";
+		advance 59;
+	}
+	//	terminate;
+	print(time) "Fertig ! : _ ";
+	report(Wartezeiten);
+	//   }
+}
+}

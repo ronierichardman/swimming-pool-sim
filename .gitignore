@@ -42,3 +42,7 @@ pytest_cache/
 .mypy_cache/
 .dmypy.json
 .pyre/
+
+node_modules/
+
+archiv/

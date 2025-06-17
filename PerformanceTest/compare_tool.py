@@ -4,8 +4,8 @@ import subprocess
 import time
 import sys
 
-swimmingpool_py = 'swimmingpool_simple.py' 
-swimmingpool_js = 'swimmingpool_simple.js'
+swimmingpool_py = 'swimmingpool.py' 
+swimmingpool_js = 'swimmingpool.js'
 
 def run_python_performance():
     """Run the Python SimPy performance test"""

@@ -1,7 +1,5 @@
 simpy
 numpy
-scipy
-psutil
 matplotlib
 seaborn
 pandas

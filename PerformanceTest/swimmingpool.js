@@ -21,12 +21,12 @@ const SimEntity = require('../SimLuxJS/SimLuxJS.js').SimEntity;
 const seedrandom = require('seedrandom');
 const fs = require('fs');
 
-const OUTPUT_MODE = 'file'; // 'console', 'file', or 'none'
+const OUTPUT_MODE = 'none'; // 'console', 'file', or 'none'
 const LOG_FILE = 'simulation_js_output.log';
 
 const RANDOM_SEED = 42;
 const SIM_DURATION = 5 * 8 * 60;
-const POOL_CAPACITY = 50;
+const POOL_CAPACITY = 100;
 const MAX_QUEUE_LENGTH = 30;
 const NUMBER_SIM_EXPERIMENTS = 20;
 
@@ -83,12 +83,12 @@ class Statistics {
         logMessage(`- Average: ${avg.toFixed(2)} min`);
         logMessage(`- Max: ${Math.max(...this.waitingTimes).toFixed(2)} min`);
         logMessage(`- Min: ${Math.min(...this.waitingTimes).toFixed(2)} min`);
-        logMessage(`- Total customers: ${this.totalCustomers}`);
-        logMessage(`- Total served: ${this.servedCustomers}`);
         logMessage(`- Total waiting times recorded: ${this.waitingTimes.length}`);
         logMessage(`- Total waiting time: ${this.waitingTimes.reduce((a, b) => a + b, 0).toFixed(2)} min`);
-        logMessage(`- Average waiting time per customer: ${(this.waitingTimes.reduce((a, b) => a + b, 0) / this.waitingTimes.length).toFixed(2)} min`);
-        logMessage(`- Capacity: ${(this.waitingTimes.length / (SIM_DURATION / 60)).toFixed(2)} persons/hour`);
+        logMessage("\nCustomer Report:");
+        logMessage(`- Total customers: ${this.totalCustomers}`);
+        logMessage(`- Total served customers: ${this.servedCustomers}`);
+        logMessage(`- Capacity (customers/hour): ${(this.waitingTimes.length / (SIM_DURATION / 60)).toFixed(2)} customers/hour`);
     }
 }
 
@@ -136,26 +136,24 @@ class Customer {
     constructor(sim, pool) {
         Customer.idCounter++;
         this.name = `Swimmer ${Customer.idCounter}`;
-        this.pool = pool;
-        this.sim = sim;
-        this.sim.addSimEntity(new SimEntity(simEntity => this.run()));
+        sim.addSimEntity(new SimEntity(simEntity => this.run(sim, pool)));
     }
 
-    async run() {
-        this.pool.numWaiting++;
-        const waitStart = this.sim.getTime();
-        logMessage(`[${this.sim.getTime().toString().padStart(5)}] ${this.name} arrives (waiting: ${this.pool.numWaiting}, inside: ${this.pool.numInside})`);
+    async run(sim, pool) {
+        pool.numWaiting++;
+        const waitStart = sim.getTime();
+        logMessage(`[${sim.getTime().toString().padStart(5)}] ${this.name} arrives (waiting: ${pool.numWaiting}, inside: ${pool.numInside})`);
 
-        while (!this.pool.canEnter()) {
-            await this.sim.advance(1);
+        while (!pool.canEnter()) {
+            await sim.advance(1);
         }
 
-        this.pool.numWaiting--;
-        const waitEnd = this.sim.getTime();
-        this.pool.stats.recordWait(waitEnd - waitStart);
-        this.pool.addSwimmer();
+        pool.numWaiting--;
+        const waitEnd = sim.getTime();
+        pool.stats.recordWait(waitEnd - waitStart);
+        pool.addSwimmer();
 
-        logMessage(`[${this.sim.getTime().toString().padStart(5)}] ${this.name} enters the pool (inside: ${this.pool.numInside})`);
+        logMessage(`[${sim.getTime().toString().padStart(5)}] ${this.name} enters the pool (inside: ${pool.numInside})`);
 
         // Determine stay duration
         const w = random();
@@ -166,30 +164,22 @@ class Customer {
             swimTime = uniform(75, 120);  // up to 45 min earlier
         }
 
-        await this.sim.advance(swimTime);
+        await sim.advance(swimTime);
 
-        this.pool.removeSwimmer();
-        this.pool.stats.servedCustomers++;
-        logMessage(`[${this.sim.getTime().toString().padStart(5)}] ${this.name} leaves the pool (inside: ${this.pool.numInside})`);
+        pool.removeSwimmer();
+        pool.stats.servedCustomers++;
+        logMessage(`[${sim.getTime().toString().padStart(5)}] ${this.name} leaves the pool (inside: ${pool.numInside})`);
     }
 }
 
-class ArrivalProcess {
-    constructor(sim, pool) {
-        this.pool = pool;
-        this.sim = sim;
-        this.sim.addSimEntity(new SimEntity(simEntity => this.run()));
-    }
-
-    async run() {
-        while (this.sim.getTime() < SIM_DURATION) {
-            await this.sim.advance(exponential(1)); // Mean interarrival: 1 min
-            if (this.pool.numWaiting < MAX_QUEUE_LENGTH) {
-                new Customer(this.sim, this.pool);
-                this.pool.stats.totalCustomers++;
-            }
+async function arrivalProcess(sim, pool) {
+    while (sim.getTime() < SIM_DURATION) {
+        await sim.advance(exponential(1)); // Mean interarrival: 1 min
+        if (pool.numWaiting < MAX_QUEUE_LENGTH) {
+            new Customer(sim, pool);
+            pool.stats.totalCustomers++;
         }
-    }
+    }   
 }
 
 async function runSingleExperiment(experimentNumber = 0) {
@@ -203,7 +193,7 @@ async function runSingleExperiment(experimentNumber = 0) {
     const pool = new SwimmingPool(simLuxJS);
 
     // Start arrival process
-    new ArrivalProcess(simLuxJS, pool);
+    simLuxJS.addSimEntity(new SimEntity(simEntity => arrivalProcess(simLuxJS, pool)));
 
     // Start gate cycle process
     simLuxJS.addSimEntity(new SimEntity(simEntity => pool.openGateCycle()));

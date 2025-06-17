@@ -21,12 +21,12 @@ import random
 import statistics
 import time
 
-OUTPUT_MODE = 'file'  # 'console', 'file', or 'none'
+OUTPUT_MODE = 'none'  # 'console', 'file', or 'none'
 LOG_FILE = 'simulation_py_output.log'
 
 RANDOM_SEED = 42
 SIM_DURATION = 5 * 8 * 60 
-POOL_CAPACITY = 50
+POOL_CAPACITY = 100
 MAX_QUEUE_LENGTH = 30
 NUMBER_SIM_EXPERIMENTS = 20
 
@@ -55,7 +55,7 @@ class Statistics:
     def __init__(self):
         self.waiting_times = []
         self.total_customers = 0
-        self.total_served = 0
+        self.served_customers = 0
 
     def record_wait(self, wait_time):
         self.waiting_times.append(wait_time)
@@ -68,12 +68,13 @@ class Statistics:
         log_message(f"- Average: {statistics.mean(self.waiting_times):.2f} min")
         log_message(f"- Max: {max(self.waiting_times):.2f} min")
         log_message(f"- Min: {min(self.waiting_times):.2f} min")
-        log_message(f"- Total customers: {self.total_customers}")
-        log_message(f"- Total served: {self.total_served}")
         log_message(f"- Total waiting times recorded: {len(self.waiting_times)}")
         log_message(f"- Total waiting time: {sum(self.waiting_times):.2f} min")
-        log_message(f"- Average waiting time per customer: {sum(self.waiting_times) / len(self.waiting_times):.2f} min")
-        log_message(f"- Capacity: {len(self.waiting_times) / (SIM_DURATION / 60):.2f} persons/hour")
+        log_message("\nCustomer Report:")
+        log_message(f"- Total customers: {self.total_customers}")
+        log_message(f"- Total served customers: {self.served_customers}")
+        log_message(f"- Capacity (customers/hour): {len(self.waiting_times) / (SIM_DURATION / 60):.2f} customers/hour")
+
 
 class SwimmingPool:
     def __init__(self, env):
@@ -111,23 +112,22 @@ class Customer:
     def __init__(self, env, pool):
         Customer.id_counter += 1
         self.name = f"Swimmer {Customer.id_counter}"
-        self.pool = pool
-        env.process(self.run(env))
+        env.process(self.run(env, pool))
 
-    def run(self, env):
-        self.pool.num_waiting += 1
+    def run(self, env, pool):
+        pool.num_waiting += 1
         wait_start = env.now
-        log_message(f"[{env.now:>5}] {self.name} arrives (waiting: {self.pool.num_waiting}, inside: {self.pool.num_inside})")
+        log_message(f"[{env.now:>5}] {self.name} arrives (waiting: {pool.num_waiting}, inside: {pool.num_inside})")
 
-        while not self.pool.can_enter():
+        while not pool.can_enter():
             yield env.timeout(1)
 
-        self.pool.num_waiting -= 1
+        pool.num_waiting -= 1
         wait_end = env.now
-        self.pool.stats.record_wait(wait_end - wait_start)
-        self.pool.add_swimmer()
+        pool.stats.record_wait(wait_end - wait_start)
+        pool.add_swimmer()
 
-        log_message(f"[{env.now:>5}] {self.name} enters the pool (inside: {self.pool.num_inside})")
+        log_message(f"[{env.now:>5}] {self.name} enters the pool (inside: {pool.num_inside})")
 
         # Determine stay duration
         w = random.random()
@@ -138,8 +138,9 @@ class Customer:
 
         yield env.timeout(swim_time)
 
-        self.pool.remove_swimmer()
-        log_message(f"[{env.now:>5}] {self.name} leaves the pool (inside: {self.pool.num_inside})")
+        pool.remove_swimmer()
+        pool.stats.served_customers += 1
+        log_message(f"[{env.now:>5}] {self.name} leaves the pool (inside: {pool.num_inside})")
 
 def arrival_process(env, pool):
     while env.now < SIM_DURATION:

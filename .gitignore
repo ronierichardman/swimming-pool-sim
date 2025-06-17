@@ -31,9 +31,6 @@ htmlcov/
 .cache/
 pytest_cache/
 
-# Logs
-*.log
-
 # Environment variables
 .env
 .env.*
@@ -43,6 +40,10 @@ pytest_cache/
 .dmypy.json
 .pyre/
 
-node_modules/
+# log files
+logs/
+*.log
 
-archiv/
+node_modules/
+output/
+archive/

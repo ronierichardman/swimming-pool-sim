@@ -1,6 +1,6 @@
 # Swimming Pool Simulation: SimPy vs SimLuxJS Performance Comparison
 
-## Project Status: ACTIVE 
+## Project Status: COMPLETED 
 
 This project implements and compares identical swimming pool simulations using two different discrete event simulation frameworks: Python's SimPy and JavaScript's SimLuxJS. 
 
@@ -100,11 +100,6 @@ pip install -r requirements.txt
 ```bash
 # Install Node.js dependencies
 npm install
-
-# Install dependencies for SimLuxJS framework
-cd SimLuxJS
-npm install
-cd ..
 ```
 
 ## Running the Project
@@ -191,9 +186,8 @@ The performance testing framework generates:
 
 - **CSV Files**: Raw performance data (`performance_results_TIMESTAMP.csv`)
 - **Heat Maps**: Visual performance patterns (`*_heatmap_TIMESTAMP.png`)
-- **Complexity Plots**: Big O analysis visualizations (`complexity_*_TIMESTAMP.png`)
-- **Summary Reports**: Markdown analysis reports (`performance_summary_TIMESTAMP.md`)
 - **Log Files**: Detailed execution logs (`performance_analysis_TIMESTAMP.log`)
+- **Simulation results Plots**: Visual representations of simulation performance metrics and comparisons (`*_TIMESTAMP.png`)
 
 All outputs are saved in the `PerformanceTest/output/` directory by default.
 
@@ -220,7 +214,7 @@ cd PerformanceTest
 python compare_tool.py
 ```
 
-### Quick Development Cycle
+### Quick Analysis Cycle
 ```bash
 # 1. Activate environment
 source venv/bin/activate
@@ -236,8 +230,4 @@ python performance_test.py --type quick
 ### Full Analysis Cycle
 ```bash
 python performance_test.py --type comprehensive
-
-# Review generated reports
-open output/performance_summary_*.md
-open output/complexity_overview_*.png
 ```
